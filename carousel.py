@@ -118,7 +118,7 @@ class CarouselOperator(bpy.types.Operator):
         carousel: Carousel = {"parent": {"name": parent_name}, "children": []}
 
         # Create collection and add it to scene
-        coll = D.collections.new(name=name)
+        coll = bpy.data.collections.new(name=name)
         C.scene.collection.children.link(coll)
 
         # Create parent, name it and put into collection
