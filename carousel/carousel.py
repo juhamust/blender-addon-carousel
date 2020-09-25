@@ -3,7 +3,8 @@ Module for creating carousel of meshes
 """
 import math
 import random
-from typing import Any, Dict, List, Set
+from typing import Any, List, Set
+
 import bpy  # type: ignore
 
 try:
@@ -18,7 +19,7 @@ O = bpy.ops
 bl_info = {
     "name": "Carousel",
     "author": "Juha Mustonen",
-    "description": "Generate carousel",
+    "description": "Generate carousel(s)",
     "blender": (2, 80, 0),
     "version": (0, 0, 1),
     "location": "Operator search",
@@ -57,14 +58,15 @@ AnimStep = TypedDict(
 BluePrint = TypedDict("BluePrint", {"name": str, "animation_steps": List[AnimStep]})
 
 
-class CarouselOperator(bpy.types.Operator):
+class OBJECT_OT_Carousel(bpy.types.Operator):
     """Tooltip"""
 
-    bl_idname = "mesh.carousel"
+    bl_idname = "object.carousel_add"
     bl_label = "Carousel Operator"
+    bl_options = {"REGISTER", "UNDO", "PRESET"}
     bl_description = "Generate carousel"
 
-    object_type: bpy.props.EnumProperty(
+    object_type: bpy.props.EnumProperty(  # type: ignore
         items=[
             ("cube", "Cube", "Simple cube"),
             ("grease", "Grease", "Grease pane"),
@@ -74,7 +76,7 @@ class CarouselOperator(bpy.types.Operator):
         default="cube",
     )
 
-    object_count: bpy.props.IntProperty(
+    object_count: bpy.props.IntProperty(  # type: ignore
         name="Objects",
         description="Object count",
         default=8,
@@ -82,7 +84,7 @@ class CarouselOperator(bpy.types.Operator):
         soft_max=10,
     )
 
-    circle_radius: bpy.props.IntProperty(
+    circle_radius: bpy.props.IntProperty(  # type: ignore
         name="Radius",
         description="Circle radius",
         default=8,
@@ -90,13 +92,18 @@ class CarouselOperator(bpy.types.Operator):
         soft_max=5,
     )
 
-    circle_count: bpy.props.IntProperty(
+    circle_count: bpy.props.IntProperty(  # type: ignore
         name="Count",
         description="Circle count",
         default=1,
         min=1,
         soft_max=50,
     )
+
+    @classmethod
+    def poll(cls, context):
+        print(f"Context: {context}")
+        return context.scene is not None
 
     def get_object_location(self, radius=10, angle=0, z=0):
         """
@@ -114,18 +121,19 @@ class CarouselOperator(bpy.types.Operator):
         """
         Generate circle with objects
         """
+        self.log("test")
         parent_name = f"{name}-parent"
         carousel: Carousel = {"parent": {"name": parent_name}, "children": []}
 
         # Create collection and add it to scene
         coll = bpy.data.collections.new(name=name)
-        C.scene.collection.children.link(coll)
+        self.context.scene.collection.children.link(coll)
 
         # Create parent, name it and put into collection
         O.mesh.primitive_cube_add(size=1, align="WORLD", location=(0, 0, z))
         parent = C.active_object
         parent.name = parent_name
-        coll.objects.link(parent)
+        # coll.objects.link(parent)
         self._unlink_world(parent)
 
         # Create object in full circle
@@ -140,7 +148,7 @@ class CarouselOperator(bpy.types.Operator):
             obj.name = f"{name}-child-{o}"
 
             # Put object into custom collection and remove from scene collection
-            coll.objects.link(obj)
+            # coll.objects.link(obj)
             self._unlink_world(obj)
             obj.parent = parent
 
@@ -164,7 +172,7 @@ class CarouselOperator(bpy.types.Operator):
 
         for step in animation_steps:
             self.report({"INFO"}, f"Add step {step['frame']}")
-            C.scene.frame_set(step["frame"])
+            self.context.scene.frame_set(step["frame"])
             parent.rotation_euler = (0, 0, math.radians(step["angle"]))
             O.anim.keyframe_insert_menu(override, type="Rotation")
 
@@ -175,7 +183,8 @@ class CarouselOperator(bpy.types.Operator):
         """
         Addons entrypoint
         """
-        self.log(f"Generating {self.circle_count} circles")
+        self.log(f"Generating {self.circle_count} circles at {context}")
+        self.context = context
 
         blueprints: List[BluePrint] = [
             {
@@ -199,7 +208,7 @@ class CarouselOperator(bpy.types.Operator):
                 radius=self.circle_radius,
                 z=num + 1,
             )
-            self.animate_carousel(carousel, blueprint["animation_steps"])
+            # self.animate_carousel(carousel, blueprint["animation_steps"])
 
         return {"FINISHED"}
 
@@ -248,11 +257,3 @@ class CarouselOperator(bpy.types.Operator):
             rotation=(0, 0, -angle),
             type="EMPTY",
         )
-
-
-def register():
-    bpy.utils.register_class(CarouselOperator)
-
-
-def unregister():
-    bpy.utils.unregister_class(CarouselOperator)
