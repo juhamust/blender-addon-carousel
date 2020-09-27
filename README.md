@@ -8,7 +8,7 @@ to have different combos.
 **Usage**
 
 - Install plugin: `carousel.py`
-- Invoke the method: `bpy.ops.mesh.carousel()`
+- Invoke the method in Python shell: `bpy.ops.object.carousel_add()` (see optional parameters below)
 
 Parameters:
 
