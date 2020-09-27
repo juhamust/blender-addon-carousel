@@ -3,7 +3,7 @@
 Simple Blender addond that generates 1-n carousels and animates them
 to have different combos.
 
-![example](./example.png)
+![preview](./preview.png)
 
 **Usage**
 
