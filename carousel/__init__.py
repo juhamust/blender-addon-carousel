@@ -9,13 +9,24 @@ bl_info = {
     "category": "Add Object",
 }
 
+
+if "bpy" in locals():
+    import importlib
+    import carousel
+
+    importlib.reload(carousel)
+else:
+    from carousel.operator import AddOperator
+    from carousel.panel import CarouselPanel
+
 import bpy  # type: ignore
-from carousel.carousel import OBJECT_OT_Carousel
 
 
 def register():
-    bpy.utils.register_class(OBJECT_OT_Carousel)
+    bpy.utils.register_class(AddOperator)
+    bpy.utils.register_class(CarouselPanel)
 
 
 def unregister():
-    bpy.utils.unregister_class(OBJECT_OT_Carousel)
+    bpy.utils.unregister_class(AddOperator)
+    bpy.utils.unregister_class(CarouselPanel)

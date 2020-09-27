@@ -12,20 +12,6 @@ try:
 except ImportError:
     TypedDict = lambda *args, **kwargs: Any
 
-C = bpy.context
-D = bpy.data
-O = bpy.ops
-
-bl_info = {
-    "name": "Carousel",
-    "author": "Juha Mustonen",
-    "description": "Generate carousel(s)",
-    "blender": (2, 80, 0),
-    "version": (0, 0, 1),
-    "location": "Operator search",
-    "warning": "",
-    "category": "Mesh",
-}
 
 CarouselParent = TypedDict(
     "CarouselParent",
@@ -58,12 +44,12 @@ AnimStep = TypedDict(
 BluePrint = TypedDict("BluePrint", {"name": str, "animation_steps": List[AnimStep]})
 
 
-class OBJECT_OT_Carousel(bpy.types.Operator):
+class AddOperator(bpy.types.Operator):
     """Tooltip"""
 
     bl_idname = "object.carousel_add"
     bl_label = "Carousel Operator"
-    bl_options = {"REGISTER", "UNDO", "PRESET"}
+    bl_options = {"REGISTER"}
     bl_description = "Generate carousel"
 
     object_type: bpy.props.EnumProperty(  # type: ignore
@@ -102,7 +88,6 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        print(f"Context: {context}")
         return context.scene is not None
 
     def get_object_location(self, radius=10, angle=0, z=0):
@@ -121,7 +106,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
         """
         Generate circle with objects
         """
-        self.log("test")
+        self.log(f"test: {self.context}")
         parent_name = f"{name}-parent"
         carousel: Carousel = {"parent": {"name": parent_name}, "children": []}
 
@@ -130,8 +115,8 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
         self.context.scene.collection.children.link(coll)
 
         # Create parent, name it and put into collection
-        O.mesh.primitive_cube_add(size=1, align="WORLD", location=(0, 0, z))
-        parent = C.active_object
+        bpy.ops.mesh.primitive_cube_add(size=1, align="WORLD", location=(0, 0, z))
+        parent = self.context.active_object
         parent.name = parent_name
         # coll.objects.link(parent)
         self._unlink_world(parent)
@@ -144,7 +129,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
 
             # Dynamically call the add function
             getattr(self, f"_add_{self.object_type}")(location, math.radians(angle))
-            obj = C.active_object
+            obj = self.context.active_object
             obj.name = f"{name}-child-{o}"
 
             # Put object into custom collection and remove from scene collection
@@ -157,13 +142,13 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
     def animate_carousel(
         self, carousel: Carousel, animation_steps: List[AnimStep]
     ) -> None:
-        C.view_layer.objects.active = None
+        self.context.view_layer.objects.active = None
 
-        parent = D.objects[carousel["parent"]["name"]]
+        parent = bpy.data.objects[carousel["parent"]["name"]]
         parent.select_set(True)
-        C.view_layer.objects.active = parent
+        self.context.view_layer.objects.active = parent
 
-        override = C.copy()
+        override = self.context.copy()
         override["active_object"] = parent
         override["selected_objects"] = [parent]
 
@@ -174,7 +159,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
             self.report({"INFO"}, f"Add step {step['frame']}")
             self.context.scene.frame_set(step["frame"])
             parent.rotation_euler = (0, 0, math.radians(step["angle"]))
-            O.anim.keyframe_insert_menu(override, type="Rotation")
+            bpy.ops.anim.keyframe_insert_menu(override, type="Rotation")
 
     def invoke(self, context, event):
         return self.execute(context)
@@ -208,7 +193,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
                 radius=self.circle_radius,
                 z=num + 1,
             )
-            # self.animate_carousel(carousel, blueprint["animation_steps"])
+            self.animate_carousel(carousel, blueprint["animation_steps"])
 
         return {"FINISHED"}
 
@@ -218,7 +203,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
 
     def _unlink_world(self, object):
         try:
-            D.scenes["Scene"].collection.objects.unlink(object)
+            bpy.data.scenes["Scene"].collection.objects.unlink(object)
         except:
             pass
 
@@ -241,7 +226,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
         return steps
 
     def _add_cube(self, location, angle):
-        O.mesh.primitive_cube_add(
+        bpy.ops.mesh.primitive_cube_add(
             size=2,
             enter_editmode=False,
             align="WORLD",
@@ -250,7 +235,7 @@ class OBJECT_OT_Carousel(bpy.types.Operator):
         )
 
     def _add_grease(self, location, angle):
-        O.object.gpencil_add(
+        bpy.ops.object.gpencil_add(
             align="WORLD",
             location=location,
             scale=(1, 1, 1),
