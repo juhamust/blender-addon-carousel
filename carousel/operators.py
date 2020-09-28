@@ -37,6 +37,7 @@ AnimStep = TypedDict(
     "AnimStep",
     {
         "frame": int,
+        "keep": int,
         "angle": float,
     },
 )
@@ -152,13 +153,21 @@ class AddOperator(bpy.types.Operator):
         override["active_object"] = parent
         override["selected_objects"] = [parent]
 
-        steps_info = [f"{step['frame']} / {step['angle']}" for step in animation_steps]
-        self.log(f"STEPS: {', '.join(steps_info)}")
+        # Set start and stop position
+        final_frame = max([step["frame"] for step in animation_steps])
+        self.context.scene.frame_start = 0
+        self.context.scene.frame_end = final_frame + animation_steps[-1]["keep"]
 
         for step in animation_steps:
-            self.report({"INFO"}, f"Add step {step['frame']}")
-            self.context.scene.frame_set(step["frame"])
+            frame = step["frame"]
+            self.report({"INFO"}, f"Add step {frame}")
+            # Set frame, rotate and insert key
+            self.context.scene.frame_set(frame)
             parent.rotation_euler = (0, 0, math.radians(step["angle"]))
+            bpy.ops.anim.keyframe_insert_menu(override, type="Rotation")
+
+            # Set frame, rotate and insert key
+            self.context.scene.frame_set(frame + step["keep"])
             bpy.ops.anim.keyframe_insert_menu(override, type="Rotation")
 
     def invoke(self, context, event):
@@ -207,18 +216,24 @@ class AddOperator(bpy.types.Operator):
         except:
             pass
 
-    def _get_steps(self, object_count: int) -> List[AnimStep]:
+    def _get_steps(
+        self, object_count: int, step_size: int = 20, keep_size: int = 10
+    ) -> List[AnimStep]:
+        """
+        Generates animation steps
+        """
         steps: List[AnimStep] = []
         # Generate object indexes in random order
         indexes: List[int] = list(range(object_count))
         random.shuffle(indexes)
-        step_size = 20
+        # Angle between two objects in the circle
         one_angle = 360.0 / object_count
 
         for num, index in enumerate(indexes):
             steps.append(
                 {
                     "frame": num * step_size,
+                    "keep": keep_size,
                     "angle": index * one_angle,
                 }
             )

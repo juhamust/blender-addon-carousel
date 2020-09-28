@@ -12,22 +12,22 @@ bl_info = {
 import bpy  # type: ignore
 
 if "operator" not in locals():
-    from carousel import operator, panel
+    from carousel import operators, panels
 else:
     import importlib
-    from carousel import operator, panel
+    from carousel import operators, panels
 
-    operator = importlib.reload(operator)
-    panel = importlib.reload(panel)
+    operators = importlib.reload(operators)
+    panels = importlib.reload(panels)
 
 
 def register():
     print("Register carousel addon")
-    bpy.utils.register_class(operator.AddOperator)  # type: ignore
-    bpy.utils.register_class(panel.CarouselPanel)  # type: ignore
+    bpy.utils.register_class(operators.AddOperator)  # type: ignore
+    bpy.utils.register_class(panels.CarouselPanel)  # type: ignore
 
 
 def unregister():
     print("Unregister carousel addon")
-    bpy.utils.unregister_class(operator.AddOperator)  # type: ignore
-    bpy.utils.unregister_class(panel.CarouselPanel)  # type: ignore
+    bpy.utils.unregister_class(operators.AddOperator)  # type: ignore
+    bpy.utils.unregister_class(panels.CarouselPanel)  # type: ignore
